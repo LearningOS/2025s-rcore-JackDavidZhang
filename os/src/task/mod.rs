@@ -54,6 +54,7 @@ lazy_static! {
         let mut tasks = [TaskControlBlock {
             task_cx: TaskContext::zero_init(),
             task_status: TaskStatus::UnInit,
+            call_count: [0usize;8],
         }; MAX_APP_NUM];
         for (i, task) in tasks.iter_mut().enumerate() {
             task.task_cx = TaskContext::goto_restore(init_app_cx(i));
@@ -77,6 +78,7 @@ impl TaskManager {
     /// Generally, the first task in task list is an idle task (we call it zero process later).
     /// But in ch3, we load apps statically, so the first task is a real app.
     fn run_first_task(&self) -> ! {
+        debug!("MAX_APP_NUM {}",MAX_APP_NUM);
         let mut inner = self.inner.exclusive_access();
         let task0 = &mut inner.tasks[0];
         task0.task_status = TaskStatus::Running;
@@ -135,6 +137,20 @@ impl TaskManager {
             panic!("All applications completed!");
         }
     }
+
+    fn count_call(&self,index:usize)
+    {
+        let mut inner = self.inner.exclusive_access();
+        let current = inner.current_task;
+        inner.tasks[current].call_count[index] += 1;
+    }
+
+    fn get_count_call(&self,index:usize) -> usize
+    {
+        let inner = self.inner.exclusive_access();
+        let current = inner.current_task;
+        inner.tasks[current].call_count[index]
+    }
 }
 
 /// Run the first task in task list.
@@ -168,4 +184,40 @@ pub fn suspend_current_and_run_next() {
 pub fn exit_current_and_run_next() {
     mark_current_exited();
     run_next_task();
+}
+
+/// Count system call
+pub fn count_call(id:usize){
+    const SYSCALL_WRITE: usize = 64;
+    const SYSCALL_EXIT: usize = 93;
+    const SYSCALL_YIELD: usize = 124;
+    const SYSCALL_GET_TIME: usize = 169;
+    const SYSCALL_TRACE: usize = 410;
+    let call_index = match id{
+        SYSCALL_WRITE=>1,
+        SYSCALL_EXIT=>2,
+        SYSCALL_YIELD=>3,
+        SYSCALL_GET_TIME=>4,
+        SYSCALL_TRACE=>5,
+        _=>0,
+    };
+    TASK_MANAGER.count_call(call_index);
+}
+
+/// Get system call count
+pub fn get_call_count(id:usize) -> usize{
+    const SYSCALL_WRITE: usize = 64;
+    const SYSCALL_EXIT: usize = 93;
+    const SYSCALL_YIELD: usize = 124;
+    const SYSCALL_GET_TIME: usize = 169;
+    const SYSCALL_TRACE: usize = 410;
+    let call_index = match id{
+        SYSCALL_WRITE=>1,
+        SYSCALL_EXIT=>2,
+        SYSCALL_YIELD=>3,
+        SYSCALL_GET_TIME=>4,
+        SYSCALL_TRACE=>5,
+        _=>0,
+    };
+    TASK_MANAGER.get_count_call(call_index)
 }
