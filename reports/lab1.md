@@ -14,6 +14,16 @@
 
 程序出错后触发`trap`进入S态，并将`scause`设为对应的原因代码，之后进入正常`trap`处理流程
 
+```
+[rustsbi] RustSBI version 0.4.0-alpha.1, adapting to RISC-V SBI v2.0.0
+```
+
+```
+[kernel] PageFault in application, bad addr = 0x0, bad instruction = 0x804003a4, kernel killed it.
+[kernel] IllegalInstruction in application, kernel killed it.
+[kernel] IllegalInstruction in application, kernel killed it.
+```
+
 ### 2.
 
 #### 1.
